@@ -1,11 +1,12 @@
 package com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.handler;
 
 import com.pragma.onclass_bootcamp_service.domain.api.CreateBootcampServicePort;
+import com.pragma.onclass_bootcamp_service.domain.api.FindBootcampsServicePort;
 import com.pragma.onclass_bootcamp_service.domain.enums.TechnicalMessage;
 import com.pragma.onclass_bootcamp_service.domain.exceptions.BusinessException;
-import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.dto.ApiResponseDTO;
-import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.dto.CreateBootcampRequestDTO;
-import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.mapper.BootcampMapper;
+import com.pragma.onclass_bootcamp_service.domain.model.Bootcamp;
+import com.pragma.onclass_bootcamp_service.domain.model.Capability;
+import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.dto.*;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.util.Constants;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.util.ErrorDTO;
 import jakarta.validation.ConstraintViolation;
@@ -31,8 +32,90 @@ import java.util.Set;
 public class BootcampHandler {
 
     private final CreateBootcampServicePort createBootcampServicePort;
-    private final BootcampMapper bootcampMapper;
+    private final FindBootcampsServicePort findBootcampsServicePort;
     private final Validator validator;
+
+    public Mono<ServerResponse> listBootcamps(ServerRequest request) {
+
+        String messageId = request.headers().firstHeader(Constants.X_MESSAGE_ID);
+
+        // Get the query params with default values
+        int page = request.queryParam("page")
+                .map(Integer::parseInt)
+                .orElse(0);
+
+        int size = request.queryParam("size")
+                .map(Integer::parseInt)
+                .orElse(10);
+
+        String sortBy = request.queryParam("sortBy")
+                .orElse("name");
+
+        String direction = request.queryParam("direction")
+                .orElse("ASC");
+
+        return findBootcampsServicePort.listBootcamps(page, size, sortBy, direction)
+                .map(pageResult -> {
+
+                    // Map domain content to response DTOs
+                    List<BootcampResponseDTO> bootcampDTOs = pageResult.content().stream()
+                            .map(bootcamp -> new BootcampResponseDTO(
+                                    bootcamp.getId(),
+                                    bootcamp.getName(),
+                                    bootcamp.getDescription(),
+                                    bootcamp.getLaunchDate(),
+                                    bootcamp.getDurationInWeeks(),
+                                    bootcamp.getCapabilities().stream()
+                                            .map(x -> new CapabilityResponseDTO(
+                                                    x.getId(), x.getName(),
+                                                    x.getTechnologies().stream()
+                                                            .map(tech -> new TechnologyResponseDTO(
+                                                                    tech.getId(), tech.getName()
+                                                            ))
+                                                            .toList()))
+                                            .toList()
+                            ))
+                            .toList();
+
+                    // Calculate the total number of pages
+                    int totalPages = (int) Math.ceil((double) pageResult.totalElements() / size);
+
+                    // Build the paginated response structure
+                  return new PageResponseDTO<>(
+                            bootcampDTOs,
+                            page+1,
+                            size,
+                            pageResult.totalElements(),
+                            totalPages
+                    );
+
+                })
+                .flatMap(capabilities -> ServerResponse
+                        .status(HttpStatus.OK)
+                        .bodyValue(capabilities))
+                .contextWrite(Context.of(Constants.X_MESSAGE_ID, Objects.requireNonNullElse(messageId, "")))
+                .onErrorResume(BusinessException.class, ex -> buildErrorResponse(
+                        HttpStatus.BAD_REQUEST,
+                        messageId,
+                        ex.getTechnicalMessage(),
+                        List.of(ErrorDTO.builder()
+                                .code(ex.getTechnicalMessage().getCode())
+                                .message(ex.getMessage())
+                                .build())
+                ))
+                .onErrorResume(ex -> {
+                    log.error("[listCapabilities] Unexpected error occurred for messageId: {}", messageId, ex);
+                    return buildErrorResponse(
+                            HttpStatus.INTERNAL_SERVER_ERROR,
+                            messageId,
+                            TechnicalMessage.INTERNAL_ERROR,
+                            List.of(ErrorDTO.builder()
+                                    .code(TechnicalMessage.INTERNAL_ERROR.getCode())
+                                    .message(TechnicalMessage.INTERNAL_ERROR.getMessage())
+                                    .build())
+                    );
+                });
+    }
 
     public Mono<ServerResponse> createBootcamp(ServerRequest request) {
 
@@ -49,8 +132,27 @@ public class BootcampHandler {
                     }
                     return Mono.just(dto);
                 })
-                .map(bootcampMapper::bootcampDtoToBootcamp)
+                .map(dto -> {
+                    Bootcamp capability = new Bootcamp();
+                    capability.setName(dto.name());
+                    capability.setDescription(dto.description());
+                    capability.setLaunchDate(dto.launchDate());
+                    capability.setDurationInWeeks(dto.durationInWeeks());
+                    capability.setCapabilities(dto.capabilities().stream()
+                            .map(Capability::new)
+                            .toList());
+                    return capability;
+                })
                 .flatMap(bootcamp -> createBootcampServicePort.createBootcamp(bootcamp,messageId))
+                .map(bootcamp ->
+                        new BootcampResponseDTO(
+                                bootcamp.getId(),
+                                bootcamp.getName(),
+                                bootcamp.getDescription(),
+                                bootcamp.getLaunchDate(),
+                                bootcamp.getDurationInWeeks()
+                        )
+                )
                 .doOnSuccess(saved ->log.info("Bootcamp successfully created  with messageId: {}", messageId))
                 .flatMap(saved -> ServerResponse
                         .status(HttpStatus.CREATED)

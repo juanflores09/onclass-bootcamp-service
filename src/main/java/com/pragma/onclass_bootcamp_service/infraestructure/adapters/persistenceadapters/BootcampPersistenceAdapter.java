@@ -1,6 +1,7 @@
 package com.pragma.onclass_bootcamp_service.infraestructure.adapters.persistenceadapters;
 
 import com.pragma.onclass_bootcamp_service.domain.model.Bootcamp;
+import com.pragma.onclass_bootcamp_service.domain.model.Capability;
 import com.pragma.onclass_bootcamp_service.domain.spi.BootcampPersistencePort;
 import com.pragma.onclass_bootcamp_service.infraestructure.adapters.persistenceadapters.entity.BootcampCapabilityEntity;
 import com.pragma.onclass_bootcamp_service.infraestructure.adapters.persistenceadapters.entity.BootcampEntity;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Collections;
 import java.util.List;
 
 @Repository
@@ -30,13 +32,17 @@ public class BootcampPersistenceAdapter implements BootcampPersistencePort {
         entity.setDurationInWeeks(bootcamp.getDurationInWeeks());
         return repository.save(entity)
                 .flatMap(saved ->{
-                    List<Long> capabilities = bootcamp.getCapabilities();
-                    if (capabilities == null || capabilities.isEmpty()) {
+                    List<Long> techIds = bootcamp.getCapabilities() == null? Collections.emptyList():
+                            bootcamp.getCapabilities().stream()
+                            .map(Capability::getId)
+                            .toList();
+
+                    if (techIds.isEmpty()) {
                         return Mono.just(saved);
                     }
 
                     // Insert the relationships in the intermediate table for each capability.
-                     return Flux.fromIterable(capabilities)
+                     return Flux.fromIterable(techIds)
                                     .flatMap(capabilityId -> {
 
                                         BootcampCapabilityEntity bootcampCapability = new BootcampCapabilityEntity();
@@ -55,6 +61,27 @@ public class BootcampPersistenceAdapter implements BootcampPersistencePort {
                             saved.getDurationInWeeks(),
                             bootcamp.getCapabilities()
                     ));
+    }
+
+    @Override
+    public Flux<Bootcamp> findAllPagedAndSorted(String sortBy, String direction, int limit, long offset) {
+        return repository.findAllPagedAndSorted(sortBy, direction, limit, offset)
+                .map(saved -> new Bootcamp(
+                        saved.getId(),
+                        saved.getName(),
+                        saved.getDescription(),
+                        saved.getLaunchDate(),
+                        saved.getDurationInWeeks()));
+    }
+
+    @Override
+    public Flux<Long> findByCapabilityId(Long capabilityId) {
+        return bootcampCapabilityRepository.findByBootcampId(capabilityId);
+    }
+
+    @Override
+    public Mono<Long> countTotal() {
+        return repository.count();
     }
 
     @Override
