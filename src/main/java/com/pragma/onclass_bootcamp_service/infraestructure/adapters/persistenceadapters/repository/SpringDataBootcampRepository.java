@@ -14,13 +14,11 @@ public interface SpringDataBootcampRepository extends ReactiveCrudRepository<Boo
     Mono<Boolean> existsByName(String name);
 
     @Query("""
-        SELECT b.id, b.name, b.description, b.launch_date, b.duration_in_weeks, COUNT(bc.capability_id) as cap_count
+        SELECT b.id, b.name, b.description, b.launch_date, b.duration_in_weeks, b.capability_count as bootcamp_count
         FROM bootcamp b
-        LEFT JOIN bootcamp_capability bc ON b.id = bc.bootcamp_id
-        GROUP BY b.id, b.name, b.description, b.launch_date, b.duration_in_weeks
         ORDER BY 
-            CASE WHEN :sortBy = 'capabilitiesCount' AND :direction = 'ASC' THEN COUNT(bc.capability_id) END ASC,
-            CASE WHEN :sortBy = 'capabilitiesCount' AND :direction = 'DESC' THEN COUNT(bc.capability_id) END DESC,
+            CASE WHEN :sortBy = 'capabilitiesCount' AND :direction = 'ASC' THEN b.capability_count END ASC,
+            CASE WHEN :sortBy = 'capabilitiesCount' AND :direction = 'DESC' THEN b.capability_count END DESC,
             CASE WHEN :sortBy = 'name' AND :direction = 'ASC' THEN b.name END ASC,
             CASE WHEN :sortBy = 'name' AND :direction = 'DESC' THEN b.name END DESC
         LIMIT :limit OFFSET :offset

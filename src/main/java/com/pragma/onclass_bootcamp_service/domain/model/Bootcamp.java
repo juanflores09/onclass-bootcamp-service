@@ -26,4 +26,12 @@ public class Bootcamp {
         this.launchDate = launchDate;
         this.durationInWeeks = durationInWeeks;
     }
+
+    public Bootcamp(String name, String description, LocalDate launchDate, Integer durationInWeeks, List<Capability> capabilities) {
+        this.name = name;
+        this.description = description;
+        this.launchDate = launchDate;
+        this.durationInWeeks = durationInWeeks;
+        this.capabilities = capabilities;
+    }
 }

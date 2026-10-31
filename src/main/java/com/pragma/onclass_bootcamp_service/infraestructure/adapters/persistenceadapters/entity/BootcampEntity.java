@@ -21,4 +21,5 @@ public class BootcampEntity {
     private String description;
     private LocalDate launchDate;
     private Integer durationInWeeks;
+    private Integer capabilityCount;
 }

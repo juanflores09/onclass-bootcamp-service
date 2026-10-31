@@ -4,9 +4,8 @@ import com.pragma.onclass_bootcamp_service.domain.api.CreateBootcampServicePort;
 import com.pragma.onclass_bootcamp_service.domain.api.FindBootcampsServicePort;
 import com.pragma.onclass_bootcamp_service.domain.enums.TechnicalMessage;
 import com.pragma.onclass_bootcamp_service.domain.exceptions.BusinessException;
-import com.pragma.onclass_bootcamp_service.domain.model.Bootcamp;
-import com.pragma.onclass_bootcamp_service.domain.model.Capability;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.dto.*;
+import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.mapper.BootcampMapper;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.util.Constants;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.util.ErrorDTO;
 import jakarta.validation.ConstraintViolation;
@@ -33,6 +32,7 @@ public class BootcampHandler {
 
     private final CreateBootcampServicePort createBootcampServicePort;
     private final FindBootcampsServicePort findBootcampsServicePort;
+    private final BootcampMapper bootcampMapper;
     private final Validator validator;
 
     public Mono<ServerResponse> listBootcamps(ServerRequest request) {
@@ -54,27 +54,12 @@ public class BootcampHandler {
         String direction = request.queryParam("direction")
                 .orElse("ASC");
 
-        return findBootcampsServicePort.listBootcamps(page, size, sortBy, direction)
+        return findBootcampsServicePort.listBootcamps(page, size, sortBy, direction, messageId)
                 .map(pageResult -> {
 
                     // Map domain content to response DTOs
                     List<BootcampResponseDTO> bootcampDTOs = pageResult.content().stream()
-                            .map(bootcamp -> new BootcampResponseDTO(
-                                    bootcamp.getId(),
-                                    bootcamp.getName(),
-                                    bootcamp.getDescription(),
-                                    bootcamp.getLaunchDate(),
-                                    bootcamp.getDurationInWeeks(),
-                                    bootcamp.getCapabilities().stream()
-                                            .map(x -> new CapabilityResponseDTO(
-                                                    x.getId(), x.getName(),
-                                                    x.getTechnologies().stream()
-                                                            .map(tech -> new TechnologyResponseDTO(
-                                                                    tech.getId(), tech.getName()
-                                                            ))
-                                                            .toList()))
-                                            .toList()
-                            ))
+                            .map(bootcamp -> bootcampMapper.bootcampToBootcampResponseDTO(bootcamp,bootcamp.getCapabilities()))
                             .toList();
 
                     // Calculate the total number of pages
@@ -132,27 +117,9 @@ public class BootcampHandler {
                     }
                     return Mono.just(dto);
                 })
-                .map(dto -> {
-                    Bootcamp capability = new Bootcamp();
-                    capability.setName(dto.name());
-                    capability.setDescription(dto.description());
-                    capability.setLaunchDate(dto.launchDate());
-                    capability.setDurationInWeeks(dto.durationInWeeks());
-                    capability.setCapabilities(dto.capabilities().stream()
-                            .map(Capability::new)
-                            .toList());
-                    return capability;
-                })
+                .map(bootcampMapper::createBootcampRequestDTOToBootcamp)
                 .flatMap(bootcamp -> createBootcampServicePort.createBootcamp(bootcamp,messageId))
-                .map(bootcamp ->
-                        new BootcampResponseDTO(
-                                bootcamp.getId(),
-                                bootcamp.getName(),
-                                bootcamp.getDescription(),
-                                bootcamp.getLaunchDate(),
-                                bootcamp.getDurationInWeeks()
-                        )
-                )
+                .map(bootcampMapper::bootcampToBootcampResponseDTO)
                 .doOnSuccess(saved ->log.info("Bootcamp successfully created  with messageId: {}", messageId))
                 .flatMap(saved -> ServerResponse
                         .status(HttpStatus.CREATED)
@@ -181,7 +148,6 @@ public class BootcampHandler {
                     );
                 });
     }
-
 
     private Mono<ServerResponse> buildErrorResponse(HttpStatus httpStatus, String identifier,
                                                     TechnicalMessage error, List<ErrorDTO> errors) {

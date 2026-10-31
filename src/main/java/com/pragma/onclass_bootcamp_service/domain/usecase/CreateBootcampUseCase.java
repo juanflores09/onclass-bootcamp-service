@@ -24,7 +24,6 @@ public class CreateBootcampUseCase implements CreateBootcampServicePort {
     @Transactional
     public Mono<Bootcamp> createBootcamp(Bootcamp bootcamp, String messageId) {
 
-        // Get IDs from the Technology object list of the domain model
         List<Long> capabilityIds = (bootcamp.getCapabilities() == null) ? Collections.emptyList()
                 : bootcamp.getCapabilities().stream()
                   .map(Capability::getId)
@@ -33,9 +32,14 @@ public class CreateBootcampUseCase implements CreateBootcampServicePort {
         return bootcampPersistencePort.existsByName(bootcamp.getName())
                 .filter(exists -> !exists)
                 .switchIfEmpty(Mono.error(new BusinessException(TechnicalMessage.BOOTCAMP_ALREADY_EXISTS)))
-                .flatMap(ignored -> capabilityValidatorGateway.validateCapabilitiesExist(capabilityIds, messageId))
-                .filter(Boolean.TRUE::equals)
-                .switchIfEmpty(Mono.error(new BusinessException(TechnicalMessage.CAPABILITY_NOT_FOUND)))
-                .flatMap(ignored -> bootcampPersistencePort.save(bootcamp));
+                .flatMap(ignored -> bootcampPersistencePort.save(bootcamp))
+                .flatMap(savedCapability ->
+                        capabilityValidatorGateway.saveCapabilityTechnologies(savedCapability.getId(), capabilityIds, messageId)
+                                .thenReturn(savedCapability)
+                                .onErrorResume(ex ->
+                                        bootcampPersistencePort.deleteById(savedCapability.getId())
+                                                .then(Mono.error(ex))
+                                )
+                );
     }
 }

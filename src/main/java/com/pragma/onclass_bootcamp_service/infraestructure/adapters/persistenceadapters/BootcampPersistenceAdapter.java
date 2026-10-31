@@ -1,82 +1,34 @@
 package com.pragma.onclass_bootcamp_service.infraestructure.adapters.persistenceadapters;
 
 import com.pragma.onclass_bootcamp_service.domain.model.Bootcamp;
-import com.pragma.onclass_bootcamp_service.domain.model.Capability;
 import com.pragma.onclass_bootcamp_service.domain.spi.BootcampPersistencePort;
-import com.pragma.onclass_bootcamp_service.infraestructure.adapters.persistenceadapters.entity.BootcampCapabilityEntity;
 import com.pragma.onclass_bootcamp_service.infraestructure.adapters.persistenceadapters.entity.BootcampEntity;
-import com.pragma.onclass_bootcamp_service.infraestructure.adapters.persistenceadapters.repository.SpringDataBootcampCapabilityRepository;
 import com.pragma.onclass_bootcamp_service.infraestructure.adapters.persistenceadapters.repository.SpringDataBootcampRepository;
+import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.mapper.BootcampMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.Collections;
-import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
 public class BootcampPersistenceAdapter implements BootcampPersistencePort {
 
     private final SpringDataBootcampRepository repository;
-    private final SpringDataBootcampCapabilityRepository bootcampCapabilityRepository;
+    private final BootcampMapper bootcampMapper;
 
     @Override
     public Mono<Bootcamp> save(Bootcamp bootcamp) {
 
-        BootcampEntity entity = new BootcampEntity();
-        entity.setName(bootcamp.getName());
-        entity.setDescription(bootcamp.getDescription());
-        entity.setLaunchDate(bootcamp.getLaunchDate());
-        entity.setDurationInWeeks(bootcamp.getDurationInWeeks());
+        BootcampEntity entity = bootcampMapper.bootcampToBootcampEntity(bootcamp);
         return repository.save(entity)
-                .flatMap(saved ->{
-                    List<Long> techIds = bootcamp.getCapabilities() == null? Collections.emptyList():
-                            bootcamp.getCapabilities().stream()
-                            .map(Capability::getId)
-                            .toList();
-
-                    if (techIds.isEmpty()) {
-                        return Mono.just(saved);
-                    }
-
-                    // Insert the relationships in the intermediate table for each capability.
-                     return Flux.fromIterable(techIds)
-                                    .flatMap(capabilityId -> {
-
-                                        BootcampCapabilityEntity bootcampCapability = new BootcampCapabilityEntity();
-                                        bootcampCapability.setBootcampId(saved.getId());
-                                        bootcampCapability.setCapabilityId(capabilityId);
-                                        return bootcampCapabilityRepository.save(bootcampCapability);
-
-                                    }, 5)
-                                    .then(Mono.just(saved));
-                    })
-                    .map(saved -> new Bootcamp(
-                            saved.getId(),
-                            saved.getName(),
-                            saved.getDescription(),
-                            saved.getLaunchDate(),
-                            saved.getDurationInWeeks(),
-                            bootcamp.getCapabilities()
-                    ));
+                    .map(saved -> bootcampMapper.bootcampEntityToBootcamp(saved, bootcamp.getCapabilities()));
     }
 
     @Override
     public Flux<Bootcamp> findAllPagedAndSorted(String sortBy, String direction, int limit, long offset) {
         return repository.findAllPagedAndSorted(sortBy, direction, limit, offset)
-                .map(saved -> new Bootcamp(
-                        saved.getId(),
-                        saved.getName(),
-                        saved.getDescription(),
-                        saved.getLaunchDate(),
-                        saved.getDurationInWeeks()));
-    }
-
-    @Override
-    public Flux<Long> findByCapabilityId(Long capabilityId) {
-        return bootcampCapabilityRepository.findByBootcampId(capabilityId);
+                .map(bootcampMapper::bootcampEntityToBootcamp);
     }
 
     @Override
@@ -87,5 +39,10 @@ public class BootcampPersistenceAdapter implements BootcampPersistencePort {
     @Override
     public Mono<Boolean> existsByName(String name) {
         return repository.existsByName(name);
+    }
+
+    @Override
+    public Mono<Void> deleteById(Long id) {
+        return repository.deleteById(id);
     }
 }
