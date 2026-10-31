@@ -1,6 +1,7 @@
 package com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.handler;
 
 import com.pragma.onclass_bootcamp_service.domain.api.CreateBootcampServicePort;
+import com.pragma.onclass_bootcamp_service.domain.api.DeleteBootcampServicePort;
 import com.pragma.onclass_bootcamp_service.domain.api.FindBootcampsServicePort;
 import com.pragma.onclass_bootcamp_service.domain.enums.TechnicalMessage;
 import com.pragma.onclass_bootcamp_service.domain.exceptions.BusinessException;
@@ -32,6 +33,7 @@ public class BootcampHandler {
 
     private final CreateBootcampServicePort createBootcampServicePort;
     private final FindBootcampsServicePort findBootcampsServicePort;
+    private final DeleteBootcampServicePort deleteBootcampServicePort;
     private final BootcampMapper bootcampMapper;
     private final Validator validator;
 
@@ -144,6 +146,45 @@ public class BootcampHandler {
                             List.of(ErrorDTO.builder()
                                     .code(TechnicalMessage.INTERNAL_ERROR.getCode())
                                     .message(TechnicalMessage.INTERNAL_ERROR.getMessage())
+                                    .build())
+                    );
+                });
+    }
+
+    public Mono<ServerResponse> deleteBootcamp(ServerRequest request) {
+
+        String messageId = request.headers().firstHeader(Constants.X_MESSAGE_ID);
+
+        return Mono.fromCallable(() -> Long.valueOf(request.pathVariable("id")))
+                .onErrorMap(NumberFormatException.class, ex ->
+                        new BusinessException("Invalid bootcamp ID format", TechnicalMessage.INVALID_PARAMETERS)
+                )
+                .flatMap(bootcampId ->
+                                deleteBootcampServicePort.deleteBootcamp(bootcampId, messageId)
+                                        .doOnSuccess(unused -> log.info("Bootcamp successfully deleted with id: {} and messageId: {}", bootcampId, messageId))
+                                        .then(ServerResponse.noContent().build())
+
+                )
+                .contextWrite(Context.of(Constants.X_MESSAGE_ID, Objects.requireNonNull(messageId)))
+                .onErrorResume(BusinessException.class, ex -> buildErrorResponse(
+                        HttpStatus.BAD_REQUEST,
+                        messageId,
+                        ex.getTechnicalMessage(),
+                        List.of(ErrorDTO.builder()
+                                .code(ex.getTechnicalMessage().getCode())
+                                .message(ex.getMessage())
+                                .build()
+                        )
+                ))
+                .onErrorResume(ex -> {
+                    log.error("[deleteBootcamp] Unexpected error occurred with messageId: {}", messageId, ex);
+                    return buildErrorResponse(
+                            HttpStatus.INTERNAL_SERVER_ERROR,
+                            messageId,
+                            TechnicalMessage.INTERNAL_ERROR,
+                            List.of(ErrorDTO.builder()
+                                    .code(TechnicalMessage.INTERNAL_ERROR.getCode())
+                                    .code(TechnicalMessage.INTERNAL_ERROR.getMessage())
                                     .build())
                     );
                 });

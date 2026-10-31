@@ -6,6 +6,7 @@ import reactor.core.publisher.Mono;
 
 public interface BootcampPersistencePort {
 
+    Mono<Bootcamp> findById(Long bootcampId);
     Mono<Boolean> existsByName(String name);
     Mono<Bootcamp> save(Bootcamp bootcamp);
     Flux<Bootcamp> findAllPagedAndSorted(String sortBy, String direction, int limit, long offset);

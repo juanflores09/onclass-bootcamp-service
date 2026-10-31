@@ -59,5 +59,19 @@ public class CapabilityWebClientAdapter implements CapabilityGateway {
                 )
                 .bodyToMono(Void.class);
     }
+
+    @Override
+    public Mono<Void> deleteCapabilitiesByBootcampId(Long bootcampId, String messageId) {
+        return webClient.delete()
+                .uri("/api/v1/capabilities/bootcamp/{bootcampId}", bootcampId)
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .header(Constants.X_MESSAGE_ID, messageId)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, response ->
+                        response.bodyToMono(ApiResponseDTO.class)
+                                .flatMap(errorResponse -> Mono.error(new ExternalServiceException(errorResponse)))
+                )
+                .bodyToMono(Void.class);
+    }
 }
 

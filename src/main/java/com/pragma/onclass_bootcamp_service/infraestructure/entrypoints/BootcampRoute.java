@@ -16,6 +16,7 @@ public class BootcampRoute {
         return route()
                 .POST("/api/v1/bootcamp", handler::createBootcamp)
                 .GET("/api/v1/bootcamps", handler::listBootcamps)
+                .DELETE("api/v1/bootcamp/{id}", handler::deleteBootcamp)
                 .build();
     }
 }

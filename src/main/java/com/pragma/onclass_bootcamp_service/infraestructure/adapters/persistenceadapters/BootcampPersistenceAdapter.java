@@ -37,6 +37,12 @@ public class BootcampPersistenceAdapter implements BootcampPersistencePort {
     }
 
     @Override
+    public Mono<Bootcamp> findById(Long bootcampId) {
+        return repository.findById(bootcampId)
+                .map(bootcampMapper::bootcampEntityToBootcamp);
+    }
+
+    @Override
     public Mono<Boolean> existsByName(String name) {
         return repository.existsByName(name);
     }

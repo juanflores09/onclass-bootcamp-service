@@ -1,10 +1,12 @@
 package com.pragma.onclass_bootcamp_service.application.config;
 
 import com.pragma.onclass_bootcamp_service.domain.api.CreateBootcampServicePort;
+import com.pragma.onclass_bootcamp_service.domain.api.DeleteBootcampServicePort;
 import com.pragma.onclass_bootcamp_service.domain.api.FindBootcampsServicePort;
 import com.pragma.onclass_bootcamp_service.domain.spi.BootcampPersistencePort;
 import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGateway;
 import com.pragma.onclass_bootcamp_service.domain.usecase.CreateBootcampUseCase;
+import com.pragma.onclass_bootcamp_service.domain.usecase.DeleteBootcampUseCase;
 import com.pragma.onclass_bootcamp_service.domain.usecase.ListBootcampUseCase;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.mapper.CapabilityMapper;
 import org.springframework.context.annotation.Bean;
@@ -26,5 +28,12 @@ public class UseCaseConfig {
             CapabilityGateway technologyValidatorGateway,
             CapabilityMapper capabilityMapper){
         return new ListBootcampUseCase(capabilityPersistencePort, technologyValidatorGateway, capabilityMapper);
+    }
+
+    @Bean
+    public DeleteBootcampServicePort deleteBootcampServicePort(
+            BootcampPersistencePort bootcampPersistencePort,
+            CapabilityGateway capabilityGateway){
+        return new DeleteBootcampUseCase(bootcampPersistencePort, capabilityGateway);
     }
 }

@@ -13,4 +13,6 @@ public interface CapabilityGateway {
 
     Mono<Void> saveCapabilityTechnologies(Long capabilityId, List<Long> technologyIds, String messageId);
 
+    Mono<Void> deleteCapabilitiesByBootcampId(Long bootcampId, String messageId);
+
 }
