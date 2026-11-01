@@ -10,6 +10,8 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Repository
 @RequiredArgsConstructor
 public class BootcampPersistenceAdapter implements BootcampPersistencePort {
@@ -39,6 +41,12 @@ public class BootcampPersistenceAdapter implements BootcampPersistencePort {
     @Override
     public Mono<Bootcamp> findById(Long bootcampId) {
         return repository.findById(bootcampId)
+                .map(bootcampMapper::bootcampEntityToBootcamp);
+    }
+
+    @Override
+    public Flux<Bootcamp> findByIds(List<Long> bootcampIds) {
+        return repository.findAllById(bootcampIds)
                 .map(bootcampMapper::bootcampEntityToBootcamp);
     }
 

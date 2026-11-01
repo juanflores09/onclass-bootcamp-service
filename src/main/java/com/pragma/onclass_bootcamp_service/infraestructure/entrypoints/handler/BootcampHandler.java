@@ -5,6 +5,7 @@ import com.pragma.onclass_bootcamp_service.domain.api.DeleteBootcampServicePort;
 import com.pragma.onclass_bootcamp_service.domain.api.FindBootcampsServicePort;
 import com.pragma.onclass_bootcamp_service.domain.enums.TechnicalMessage;
 import com.pragma.onclass_bootcamp_service.domain.exceptions.BusinessException;
+import com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilitywebclientadapter.dto.BootcampIdsRequestDTO;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.dto.*;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.mapper.BootcampMapper;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.util.Constants;
@@ -190,6 +191,26 @@ public class BootcampHandler {
                 });
     }
 
+    public Mono<ServerResponse> getBootcampsDetailsBatch(ServerRequest request) {
+        String messageId = request.headers().firstHeader(Constants.X_MESSAGE_ID);
+
+        return request.bodyToMono(BootcampIdsRequestDTO.class)
+                .flatMapMany(requestDTO ->
+                        findBootcampsServicePort.findBootcampsByIds(requestDTO.ids(), messageId)
+                )
+                .map(bootcampMapper::bootcampToBootcampResponseDTO)
+                .collectList()
+                .flatMap(bootcamps -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(bootcamps)
+                )
+                .contextWrite(Context.of(Constants.X_MESSAGE_ID, Objects.requireNonNull(messageId)))
+                .onErrorResume(ex -> {
+                    log.error("[getBootcampsDetailsBatch] Unexpected error with messageId: {}", messageId, ex);
+                    return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                });
+    }
+
     private Mono<ServerResponse> buildErrorResponse(HttpStatus httpStatus, String identifier,
                                                     TechnicalMessage error, List<ErrorDTO> errors) {
         return Mono.defer(() -> {
@@ -203,4 +224,5 @@ public class BootcampHandler {
             return ServerResponse.status(httpStatus).bodyValue(apiErrorResponse);
         });
     }
+
 }

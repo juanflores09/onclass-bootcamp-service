@@ -70,4 +70,12 @@ public class ListBootcampUseCase implements FindBootcampsServicePort {
         return Mono.zip(bootcampsFlux.collectList(), totalCountMono)
                 .map(tuple -> new PageResult<>(tuple.getT1(), tuple.getT2()));
     }
+
+    @Override
+    public Flux<Bootcamp> findBootcampsByIds(List<Long> ids, String messageId) {
+        if (ids == null || ids.isEmpty()) {
+            return Flux.empty();
+        }
+        return bootcampPersistencePort.findByIds(ids);
+    }
 }
