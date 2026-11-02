@@ -2,14 +2,11 @@ package com.pragma.onclass_bootcamp_service.domain.usecase;
 
 import com.pragma.onclass_bootcamp_service.domain.api.FindBootcampsServicePort;
 import com.pragma.onclass_bootcamp_service.domain.model.Bootcamp;
+import com.pragma.onclass_bootcamp_service.domain.model.BootcampCapabilityAggregate;
 import com.pragma.onclass_bootcamp_service.domain.model.Capability;
 import com.pragma.onclass_bootcamp_service.domain.model.PageResult;
 import com.pragma.onclass_bootcamp_service.domain.spi.BootcampPersistencePort;
 import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGateway;
-import com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilitywebclientadapter.dto.BootcampCapabilitiesResponseDTO;
-import com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilitywebclientadapter.dto.BootcampIdsRequestDTO;
-import com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilitywebclientadapter.dto.CapabilityDTO;
-import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.mapper.CapabilityMapper;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -22,7 +19,6 @@ public class ListBootcampUseCase implements FindBootcampsServicePort {
 
     private final BootcampPersistencePort bootcampPersistencePort;
     private final CapabilityGateway capabilityGateway;
-    private final CapabilityMapper capabilityMapper;
 
     @Override
     public Mono<PageResult<Bootcamp>> listBootcamps(int page, int size, String sortBy, String direction, String messageId) {
@@ -40,23 +36,16 @@ public class ListBootcampUseCase implements FindBootcampsServicePort {
                             .map(Bootcamp::getId)
                             .toList();
 
-                    BootcampIdsRequestDTO capabilityIdsRequestDTO = new BootcampIdsRequestDTO(bootcampIds);
-
-                    return capabilityGateway.getCapabilitiesByBootcampId(capabilityIdsRequestDTO, messageId)
+                    return capabilityGateway.getCapabilitiesByBootcampId(bootcampIds, messageId)
                             .collectMap(
-                                    BootcampCapabilitiesResponseDTO::bootcampId,
-                                    BootcampCapabilitiesResponseDTO::capabilities
+                                    BootcampCapabilityAggregate::getBootcampId,
+                                    BootcampCapabilityAggregate::getCapabilities
                             )
                             .flatMapMany(techMap ->
                                     Flux.fromIterable(bootcamps)
                                             .map(bootcamp -> {
-                                                List<CapabilityDTO> capabilityDTOs = techMap.getOrDefault(bootcamp.getId(), Collections.emptyList());
-
-                                                List<Capability> domainCapabilities = capabilityDTOs.stream()
-                                                        .map(capabilityMapper::capabilityDtoToCapability)
-                                                        .toList();
-
-                                                bootcamp.setCapabilities(domainCapabilities);
+                                                List<Capability> capabilityList = techMap.getOrDefault(bootcamp.getId(), Collections.emptyList());
+                                                bootcamp.setCapabilities(capabilityList);
                                                 return bootcamp;
                                             })
 

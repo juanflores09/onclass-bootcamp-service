@@ -1,6 +1,8 @@
 package com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.mapper;
 
+import com.pragma.onclass_bootcamp_service.domain.model.BootcampCapabilityAggregate;
 import com.pragma.onclass_bootcamp_service.domain.model.Capability;
+import com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilitywebclientadapter.dto.BootcampCapabilitiesResponseDTO;
 import com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilitywebclientadapter.dto.CapabilityDTO;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.dto.CapabilityResponseDTO;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,15 @@ public class CapabilityMapper {
                 capability.getName(),
                 capability.getTechnologies().stream()
                         .map(technologyMapper::technologyToTechnologyResponseDTO)
+                        .toList()
+        );
+    }
+
+    public BootcampCapabilityAggregate dtoToBootcampCapabilityAggregate(BootcampCapabilitiesResponseDTO dto){
+        return new BootcampCapabilityAggregate(
+                dto.bootcampId(),
+                dto.capabilities().stream()
+                        .map(this::capabilityDtoToCapability)
                         .toList()
         );
     }

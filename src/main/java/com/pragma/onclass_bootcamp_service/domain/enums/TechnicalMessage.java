@@ -12,7 +12,8 @@ public enum TechnicalMessage {
     BOOTCAMP_ALREADY_EXISTS("400", "Ya existe un bootcamp con ese nombre"),
     INVALID_PARAMETERS("400", "Parámetros inválidos"),
     CAPABILITY_NOT_FOUND("400", "La capacidad asociada no existe"),
-    BOOTCAMP_NOT_FOUND("400", "El bootcamp no existe");
+    BOOTCAMP_NOT_FOUND("400", "El bootcamp no existe"),
+    NO_BOOTCAMPS_ENROLLED("400", "No existen inscripciones a bootcamps registradas en el sistema");
 
     private final String code;
     private final String message;

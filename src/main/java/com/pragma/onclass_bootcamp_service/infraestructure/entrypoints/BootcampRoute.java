@@ -18,6 +18,7 @@ public class BootcampRoute {
                 .GET("/api/v1/bootcamps", handler::listBootcamps)
                 .DELETE("api/v1/bootcamp/{id}", handler::deleteBootcamp)
                 .POST("/api/v1/bootcamps/batch", handler::getBootcampsDetailsBatch)
+                .GET("/api/v1/bootcamps/reports/most-popular", handler::getMostPopularBootcamp)
                 .build();
     }
 }

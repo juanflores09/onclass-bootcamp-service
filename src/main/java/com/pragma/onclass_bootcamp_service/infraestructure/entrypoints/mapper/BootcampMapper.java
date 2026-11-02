@@ -1,8 +1,12 @@
 package com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.mapper;
 
 import com.pragma.onclass_bootcamp_service.domain.model.Bootcamp;
+import com.pragma.onclass_bootcamp_service.domain.model.BootcampPopularity;
 import com.pragma.onclass_bootcamp_service.domain.model.Capability;
+import com.pragma.onclass_bootcamp_service.domain.model.MostPopularEnrollmentAggregate;
+import com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilitywebclientadapter.dto.MostPopularEnrollmentDTO;
 import com.pragma.onclass_bootcamp_service.infraestructure.adapters.persistenceadapters.entity.BootcampEntity;
+import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.dto.BootcampPopularityResponseDTO;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.dto.BootcampResponseDTO;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.dto.CreateBootcampRequestDTO;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +19,8 @@ import java.util.List;
 public class BootcampMapper {
 
     private final CapabilityMapper capabilityMapper;
+    private final PersonMapper personMapper;
+
     public Bootcamp createBootcampRequestDTOToBootcamp(CreateBootcampRequestDTO dto){
         return new Bootcamp(
                 dto.name(),
@@ -79,6 +85,33 @@ public class BootcampMapper {
                 bootcampEntity.getLaunchDate(),
                 bootcampEntity.getDurationInWeeks(),
                 capabilities
+        );
+    }
+
+    public MostPopularEnrollmentAggregate dtoToMostPopularEnrollmentAggregate(MostPopularEnrollmentDTO dto){
+        return new MostPopularEnrollmentAggregate(
+                dto.getBootcampId(),
+                dto.getTotalEnrolled(),
+                dto.getEnrolledPersons().stream()
+                        .map(personMapper::enrolledPersonDtoToenrolledPerson)
+                        .toList()
+        );
+    }
+
+    public BootcampPopularityResponseDTO bootcampPopularityToResponseDTO(BootcampPopularity bootcampPopularity){
+        return new BootcampPopularityResponseDTO(
+                bootcampPopularity.getId(),
+                bootcampPopularity.getName(),
+                bootcampPopularity.getDescription(),
+                bootcampPopularity.getLaunchDate(),
+                bootcampPopularity.getDurationInWeeks(),
+                bootcampPopularity.getTotalEnrolled(),
+                bootcampPopularity.getCapabilities().stream()
+                        .map(capabilityMapper::capabilityTocapabilityResponseDTO)
+                        .toList(),
+                bootcampPopularity.getEnrolledPersons().stream()
+                        .map(personMapper::enrolledPersonDtoToResponseDTO)
+                        .toList()
         );
     }
 }

@@ -3,6 +3,7 @@ package com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.handler;
 import com.pragma.onclass_bootcamp_service.domain.api.CreateBootcampServicePort;
 import com.pragma.onclass_bootcamp_service.domain.api.DeleteBootcampServicePort;
 import com.pragma.onclass_bootcamp_service.domain.api.FindBootcampsServicePort;
+import com.pragma.onclass_bootcamp_service.domain.api.GetMostPopularBootcampServicePort;
 import com.pragma.onclass_bootcamp_service.domain.enums.TechnicalMessage;
 import com.pragma.onclass_bootcamp_service.domain.exceptions.BusinessException;
 import com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilitywebclientadapter.dto.BootcampIdsRequestDTO;
@@ -35,6 +36,7 @@ public class BootcampHandler {
     private final CreateBootcampServicePort createBootcampServicePort;
     private final FindBootcampsServicePort findBootcampsServicePort;
     private final DeleteBootcampServicePort deleteBootcampServicePort;
+    private final GetMostPopularBootcampServicePort getMostPopularBootcampServicePort;
     private final BootcampMapper bootcampMapper;
     private final Validator validator;
 
@@ -70,12 +72,12 @@ public class BootcampHandler {
 
                     // Build the paginated response structure
                   return new PageResponseDTO<>(
-                            bootcampDTOs,
                             page+1,
-                            size,
-                            pageResult.totalElements(),
-                            totalPages
-                    );
+                                size,
+                                pageResult.totalElements(),
+                                totalPages,
+                                bootcampDTOs
+                          );
 
                 })
                 .flatMap(capabilities -> ServerResponse
@@ -207,6 +209,22 @@ public class BootcampHandler {
                 .contextWrite(Context.of(Constants.X_MESSAGE_ID, Objects.requireNonNull(messageId)))
                 .onErrorResume(ex -> {
                     log.error("[getBootcampsDetailsBatch] Unexpected error with messageId: {}", messageId, ex);
+                    return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                });
+    }
+
+    public Mono<ServerResponse> getMostPopularBootcamp(ServerRequest request) {
+        String messageId = request.headers().firstHeader(Constants.X_MESSAGE_ID);
+
+        return getMostPopularBootcampServicePort.execute(messageId)
+                .map(bootcampMapper::bootcampPopularityToResponseDTO)
+                .flatMap(response -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(response)
+                )
+                .contextWrite(Context.of(Constants.X_MESSAGE_ID, Objects.requireNonNull(messageId)))
+                .onErrorResume(ex -> {
+                    log.error("[getMostPopularBootcamp] Error fetching most popular bootcamp with messageId: {}", messageId, ex);
                     return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
                 });
     }

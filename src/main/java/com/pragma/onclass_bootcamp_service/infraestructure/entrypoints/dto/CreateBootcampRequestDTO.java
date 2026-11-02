@@ -10,11 +10,11 @@ import java.util.List;
 
 public record CreateBootcampRequestDTO (
         @NotBlank(message = "El nombre del bootcamp no puede estar vacío")
-        @Size(max = 50, message = "El nombre no debe superar los 50 caracteres")
+        @Size(max = 100, message = "El nombre no debe superar los 100 caracteres")
         String name,
 
         @NotBlank(message = "La descripción no puede estar vacía")
-        @Size(max = 90, message = "La descripción no debe superar los 90 caracteres")
+        @Size(max = 200, message = "La descripción no debe superar los 200 caracteres")
         String description,
 
         @NotNull(message = "La fecha de lanzamiento es obligatoria")
