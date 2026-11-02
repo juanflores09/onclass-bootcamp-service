@@ -1,26 +1,25 @@
 openapi: 3.0.3
 info:
-  title: API de Bootcamps
+  title: Bootcamp Microservice API
+  description: Microservicio encargado de la gestión de bootcamps, procesamiento por lotes, reportes de popularidad y su vinculación con capacidades.
   version: 1.0.0
-  description: Documentación de la API para la gestión de bootcamps.
 
 servers:
   - url: http://localhost:8082
-    description: Servidor Local de Desarrollo
+    description: Servidor Local
 
 paths:
   /api/v1/bootcamp:
     post:
       summary: Crear un nuevo bootcamp
-      description: Recibe los datos de un bootcamp, valida restricciones, asigna capacidades y lo registra en el sistema.
-      operationId: createBootcamp
+      description: Registra un bootcamp validando sus parámetros y asociando las capacidades indicadas.
       parameters:
-        - in: header
-          name: x-message-id
-          required: true
+        - name: x-message-id
+          in: header
+          required: false
+          description: Identificador único de traza del mensaje
           schema:
             type: string
-          description: Identificador único del mensaje para trazabilidad
       requestBody:
         required: true
         content:
@@ -35,7 +34,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BootcampResponseDTO'
         '400':
-          description: Parámetros inválidos o error de negocio
+          description: Parámetros inválidos o bootcamp existente
           content:
             application/json:
               schema:
@@ -49,52 +48,50 @@ paths:
 
   /api/v1/bootcamps:
     get:
-      summary: Listar bootcamps de forma paginada
-      description: Obtiene una lista paginada de bootcamps con sus respectivas capacidades y tecnologías, con opciones de ordenamiento.
-      operationId: listBootcamps
+      summary: Listar bootcamps paginados
+      description: Obtiene una lista paginada y ordenada de todos los bootcamps enriquecidos con sus capacidades.
       parameters:
-        - in: header
-          name: x-message-id
+        - name: x-message-id
+          in: header
           required: false
+          description: Identificador único de traza del mensaje
           schema:
             type: string
-          description: Identificador único del mensaje para trazabilidad
-        - in: query
-          name: page
+        - name: page
+          in: query
           required: false
+          description: Número de página (comienza en 0 por defecto)
           schema:
             type: integer
             default: 0
-          description: Número de página (inicia en 0)
-        - in: query
-          name: size
+        - name: size
+          in: query
           required: false
+          description: Cantidad de elementos por página (por defecto 10)
           schema:
             type: integer
             default: 10
-          description: Cantidad de elementos por página
-        - in: query
-          name: sortBy
+        - name: sortBy
+          in: query
           required: false
+          description: Campo por el cual ordenar (por defecto "name")
           schema:
             type: string
-            default: name
-          description: Campo por el cual ordenar
-        - in: query
-          name: direction
+            default: "name"
+        - name: direction
+          in: query
           required: false
+          description: Dirección del ordenamiento ("ASC" o "DESC")
           schema:
             type: string
-            enum: [ASC, DESC]
-            default: ASC
-          description: Dirección del ordenamiento
+            default: "ASC"
       responses:
         '200':
-          description: Lista de bootcamps paginada obtenida exitosamente
+          description: Página de bootcamps obtenida exitosamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BootcampPageResponseDTO'
+                $ref: '#/components/schemas/PageResponseDTO_Bootcamp'
         '400':
           description: Parámetros inválidos
           content:
@@ -107,6 +104,90 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseDTO'
+
+  /api/v1/bootcamp/{id}:
+    delete:
+      summary: Eliminar bootcamp por ID
+      description: Elimina un bootcamp y limpia de forma asíncrona sus relaciones con capacidades mediante el patrón Fail-Fast.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del bootcamp a eliminar
+          schema:
+            type: integer
+            format: int64
+        - name: x-message-id
+          in: header
+          required: false
+          description: Identificador único de traza del mensaje
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Bootcamp eliminado exitosamente (No Content)
+        '400':
+          description: Formato de ID inválido o bootcamp no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseDTO'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseDTO'
+
+  /api/v1/bootcamps/batch:
+    post:
+      summary: Obtener detalles de bootcamps por lote (Batch)
+      description: Retorna una lista con los detalles de los bootcamps correspondientes a los IDs proporcionados.
+      parameters:
+        - name: x-message-id
+          in: header
+          required: false
+          description: Identificador único de traza del mensaje
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BootcampIdsRequestDTO'
+      responses:
+        '200':
+          description: Lista de bootcamps obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BootcampResponseDTO'
+        '500':
+          description: Error interno del servidor
+
+  /api/v1/bootcamps/reports/most-popular:
+    get:
+      summary: Obtener el bootcamp más popular
+      description: Retorna la información estadística y de capacidades del bootcamp con mayor número de inscripciones.
+      parameters:
+        - name: x-message-id
+          in: header
+          required: false
+          description: Identificador único de traza del mensaje
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Bootcamp más popular obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BootcampPopularityResponseDTO'
+        '500':
+          description: Error interno del servidor
 
 components:
   schemas:
@@ -121,23 +202,22 @@ components:
       properties:
         name:
           type: string
-          example: Bootcamp Backend Avanzado
+          example: "Java Reactive Bootcamp"
         description:
           type: string
-          example: Programa intensivo en arquitecturas reactivas
+          example: "Bootcamp intensivo sobre Spring WebFlux y arquitecturas reactivas"
         launchDate:
           type: string
-          format: date
-          example: "2026-11-15"
+          example: "2026-06-01"
         durationInWeeks:
           type: integer
-          example: 8
+          example: 12
         capabilities:
           type: array
           items:
             type: integer
             format: int64
-          example: [1, 2]
+          example: [1, 2, 3]
 
     BootcampResponseDTO:
       type: object
@@ -148,17 +228,16 @@ components:
           example: 1
         name:
           type: string
-          example: Bootcamp Backend Avanzado
+          example: "Java Reactive Bootcamp"
         description:
           type: string
-          example: Programa intensivo en arquitecturas reactivas
+          example: "Bootcamp intensivo sobre Spring WebFlux y arquitecturas reactivas"
         launchDate:
           type: string
-          format: date
-          example: "2026-11-15"
+          example: "2026-06-01"
         durationInWeeks:
           type: integer
-          example: 8
+          example: 12
         capabilities:
           type: array
           items:
@@ -170,16 +249,37 @@ components:
         id:
           type: integer
           format: int64
-          example: 1
+          example: 10
         name:
           type: string
-          example: Backend Development
+          example: "Fundamentos de Backend"
+        description:
+          type: string
+          example: "Capacidad orientada al desarrollo de servicios web"
         technologies:
           type: array
           items:
-            $ref: '#/components/schemas/TechnologyResponseDTO'
+            type: object
+            properties:
+              id:
+                type: integer
+                format: int64
+              name:
+                type: string
 
-    TechnologyResponseDTO:
+    BootcampIdsRequestDTO:
+      type: object
+      required:
+        - ids
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+          example: [1, 2, 3]
+
+    BootcampPopularityResponseDTO:
       type: object
       properties:
         id:
@@ -188,19 +288,46 @@ components:
           example: 1
         name:
           type: string
-          example: Spring Boot
-
-    BootcampPageResponseDTO:
-      type: object
-      properties:
-        content:
+          example: "Java Reactive Bootcamp"
+        description:
+          type: string
+          example: "Bootcamp intensivo sobre Spring WebFlux"
+        launchDate:
+          type: string
+          example: "2026-06-01"
+        durationInWeeks:
+          type: integer
+          example: 12
+        totalEnrolled:
+          type: integer
+          format: int64
+          example: 25
+        capabilities:
           type: array
           items:
-            $ref: '#/components/schemas/BootcampResponseDTO'
-        pageNumber:
+            $ref: '#/components/schemas/CapabilityResponseDTO'
+        enrolledPersons:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnrolledPersonResponseDTO'
+
+    EnrolledPersonResponseDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Juan Pérez"
+        email:
+          type: string
+          example: "juan.perez@example.com"
+
+    PageResponseDTO_Bootcamp:
+      type: object
+      properties:
+        page:
           type: integer
           example: 1
-        pageSize:
+        size:
           type: integer
           example: 10
         totalElements:
@@ -210,34 +337,37 @@ components:
         totalPages:
           type: integer
           example: 2
-
-    ErrorDTO:
-      type: object
-      properties:
-        code:
-          type: string
-          example: "ERR_01"
-        message:
-          type: string
-          example: "El campo no puede estar vacío"
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/BootcampResponseDTO'
 
     ApiResponseDTO:
       type: object
       properties:
         code:
           type: string
-          example: "400"
+          example: "INVALID_PARAMETERS"
         message:
           type: string
-          example: "Bad Request"
+          example: "The provided parameters are invalid."
         identifier:
           type: string
-          example: "msg-456789"
+          example: "msg-uuid-1234"
         date:
           type: string
-          format: date-time
-          example: "2026-10-28T16:30:00Z"
+          example: "2026-11-02T16:30:00Z"
         errors:
           type: array
           items:
             $ref: '#/components/schemas/ErrorDTO'
+
+    ErrorDTO:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "INVALID_PARAMETERS"
+        message:
+          type: string
+          example: "El campo name no puede estar vacío"
