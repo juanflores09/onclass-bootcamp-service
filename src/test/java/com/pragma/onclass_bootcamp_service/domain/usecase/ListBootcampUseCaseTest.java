@@ -4,7 +4,7 @@ import com.pragma.onclass_bootcamp_service.domain.model.Bootcamp;
 import com.pragma.onclass_bootcamp_service.domain.model.BootcampCapabilityAggregate;
 import com.pragma.onclass_bootcamp_service.domain.model.Capability;
 import com.pragma.onclass_bootcamp_service.domain.spi.BootcampPersistencePort;
-import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGateway;
+import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGatewayPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,7 +29,7 @@ class ListBootcampUseCaseTest {
     private BootcampPersistencePort bootcampPersistencePort;
 
     @Mock
-    private CapabilityGateway capabilityGateway;
+    private CapabilityGatewayPort capabilityGateway;
 
     @InjectMocks
     private ListBootcampUseCase listBootcampUseCase;

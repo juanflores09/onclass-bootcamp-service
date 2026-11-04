@@ -2,7 +2,7 @@ package com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilityw
 
 import com.pragma.onclass_bootcamp_service.domain.exceptions.ExternalServiceException;
 import com.pragma.onclass_bootcamp_service.domain.model.BootcampCapabilityAggregate;
-import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGateway;
+import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGatewayPort;
 import com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilitywebclientadapter.dto.BootcampCapabilitiesRequestDTO;
 import com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilitywebclientadapter.dto.BootcampCapabilitiesResponseDTO;
 import com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilitywebclientadapter.dto.BootcampIdsRequestDTO;
@@ -23,7 +23,7 @@ import java.util.List;
 
 @Slf4j
 @Component
-public class CapabilityWebClientAdapter implements CapabilityGateway {
+public class CapabilityWebClientAdapter implements CapabilityGatewayPort {
 
 
     private final WebClient webClient;
@@ -80,6 +80,20 @@ public class CapabilityWebClientAdapter implements CapabilityGateway {
                                 .flatMap(errorResponse -> Mono.error(new ExternalServiceException(errorResponse)))
                 )
                 .bodyToMono(Void.class);
+    }
+
+    @Override
+    public Mono<Integer> getTotalTechnologiesByCapabilities(Long bootcampId, String messageId) {
+        return webClient.get()
+                .uri("/api/v1/capabilities/bootcamps/{bootcampId}/total-technologies", bootcampId)
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .header(Constants.X_MESSAGE_ID, messageId != null ? messageId : "")
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, response ->
+                        response.bodyToMono(ApiResponseDTO.class)
+                                .flatMap(errorResponse -> Mono.error(new ExternalServiceException(errorResponse)))
+                )
+                .bodyToMono(Integer.class);
     }
 }
 

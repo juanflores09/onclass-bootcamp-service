@@ -4,7 +4,7 @@ import com.pragma.onclass_bootcamp_service.domain.enums.TechnicalMessage;
 import com.pragma.onclass_bootcamp_service.domain.exceptions.BusinessException;
 import com.pragma.onclass_bootcamp_service.domain.model.Bootcamp;
 import com.pragma.onclass_bootcamp_service.domain.spi.BootcampPersistencePort;
-import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGateway;
+import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGatewayPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,7 +26,7 @@ class DeleteBootcampUseCaseTest {
     private BootcampPersistencePort bootcampPersistencePort;
 
     @Mock
-    private CapabilityGateway capabilityGateway;
+    private CapabilityGatewayPort capabilityGateway;
 
     @InjectMocks
     private DeleteBootcampUseCase deleteBootcampUseCase;

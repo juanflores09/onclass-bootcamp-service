@@ -2,7 +2,7 @@ package com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilityw
 
 import com.pragma.onclass_bootcamp_service.domain.exceptions.ExternalServiceException;
 import com.pragma.onclass_bootcamp_service.domain.model.MostPopularEnrollmentAggregate;
-import com.pragma.onclass_bootcamp_service.domain.spi.PersonGateway;
+import com.pragma.onclass_bootcamp_service.domain.spi.PersonGatewayPort;
 import com.pragma.onclass_bootcamp_service.infraestructure.adapters.capabilitywebclientadapter.dto.MostPopularEnrollmentDTO;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.dto.ApiResponseDTO;
 import com.pragma.onclass_bootcamp_service.infraestructure.entrypoints.mapper.BootcampMapper;
@@ -16,7 +16,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 @Component
-public class PersonWebClientAdapter implements PersonGateway {
+public class PersonWebClientAdapter implements PersonGatewayPort {
 
     private final WebClient webClient;
     private final BootcampMapper bootcampMapper;

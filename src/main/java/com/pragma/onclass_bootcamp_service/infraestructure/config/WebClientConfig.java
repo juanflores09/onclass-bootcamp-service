@@ -22,4 +22,12 @@ public class WebClientConfig {
                 .defaultHeader("Content-Type", "application/json")
                 .build();
     }
+
+    @Bean(name = "reportWebClient")
+    public WebClient reportWebClient() {
+        return WebClient.builder()
+                .baseUrl("http://localhost:8084")
+                .defaultHeader("Content-Type", "application/json")
+                .build();
+    }
 }

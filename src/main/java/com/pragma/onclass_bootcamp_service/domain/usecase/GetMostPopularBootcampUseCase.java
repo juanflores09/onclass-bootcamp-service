@@ -3,8 +3,8 @@ package com.pragma.onclass_bootcamp_service.domain.usecase;
 import com.pragma.onclass_bootcamp_service.domain.api.GetMostPopularBootcampServicePort;
 import com.pragma.onclass_bootcamp_service.domain.model.BootcampPopularity;
 import com.pragma.onclass_bootcamp_service.domain.spi.BootcampPersistencePort;
-import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGateway;
-import com.pragma.onclass_bootcamp_service.domain.spi.PersonGateway;
+import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGatewayPort;
+import com.pragma.onclass_bootcamp_service.domain.spi.PersonGatewayPort;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -14,8 +14,8 @@ import java.util.List;
 public class GetMostPopularBootcampUseCase implements GetMostPopularBootcampServicePort {
 
     private final BootcampPersistencePort bootcampPersistencePort;
-    private final PersonGateway personGateway;
-    private final CapabilityGateway capabilityGateway;
+    private final PersonGatewayPort personGateway;
+    private final CapabilityGatewayPort capabilityGateway;
 
      @Override
     public Mono<BootcampPopularity> execute(String messageId) {

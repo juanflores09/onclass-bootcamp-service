@@ -6,7 +6,7 @@ import com.pragma.onclass_bootcamp_service.domain.model.BootcampCapabilityAggreg
 import com.pragma.onclass_bootcamp_service.domain.model.Capability;
 import com.pragma.onclass_bootcamp_service.domain.model.PageResult;
 import com.pragma.onclass_bootcamp_service.domain.spi.BootcampPersistencePort;
-import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGateway;
+import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGatewayPort;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -18,7 +18,7 @@ import java.util.List;
 public class ListBootcampUseCase implements FindBootcampsServicePort {
 
     private final BootcampPersistencePort bootcampPersistencePort;
-    private final CapabilityGateway capabilityGateway;
+    private final CapabilityGatewayPort capabilityGateway;
 
     @Override
     public Mono<PageResult<Bootcamp>> listBootcamps(int page, int size, String sortBy, String direction, String messageId) {

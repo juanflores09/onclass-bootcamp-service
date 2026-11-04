@@ -5,8 +5,8 @@ import com.pragma.onclass_bootcamp_service.domain.model.BootcampCapabilityAggreg
 import com.pragma.onclass_bootcamp_service.domain.model.Capability;
 import com.pragma.onclass_bootcamp_service.domain.model.MostPopularEnrollmentAggregate;
 import com.pragma.onclass_bootcamp_service.domain.spi.BootcampPersistencePort;
-import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGateway;
-import com.pragma.onclass_bootcamp_service.domain.spi.PersonGateway;
+import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGatewayPort;
+import com.pragma.onclass_bootcamp_service.domain.spi.PersonGatewayPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -30,10 +30,10 @@ class GetMostPopularBootcampUseCaseTest {
     private BootcampPersistencePort bootcampPersistencePort;
 
     @Mock
-    private PersonGateway personGateway;
+    private PersonGatewayPort personGateway;
 
     @Mock
-    private CapabilityGateway capabilityGateway;
+    private CapabilityGatewayPort capabilityGateway;
 
     @InjectMocks
     private GetMostPopularBootcampUseCase getMostPopularBootcampUseCase;

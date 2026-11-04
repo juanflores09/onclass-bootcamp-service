@@ -5,7 +5,8 @@ import com.pragma.onclass_bootcamp_service.domain.exceptions.BusinessException;
 import com.pragma.onclass_bootcamp_service.domain.model.Bootcamp;
 import com.pragma.onclass_bootcamp_service.domain.model.Capability;
 import com.pragma.onclass_bootcamp_service.domain.spi.BootcampPersistencePort;
-import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGateway;
+import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGatewayPort;
+import com.pragma.onclass_bootcamp_service.domain.spi.ReportGatewayPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +30,10 @@ class CreateCapabilityUseCaseTest {
     private BootcampPersistencePort bootcampPersistencePort;
 
     @Mock
-    private CapabilityGateway capabilityValidatorGateway;
+    private CapabilityGatewayPort capabilityValidatorGateway;
+
+    @Mock
+    private ReportGatewayPort reportGatewayPort;
 
     @InjectMocks
     private CreateBootcampUseCase createBootcampUseCase;
@@ -58,6 +62,7 @@ class CreateCapabilityUseCaseTest {
                 .thenReturn(Mono.just(savedBootcamp));
         when(capabilityValidatorGateway.saveCapabilityTechnologies(5L, List.of(1L), messageId))
                 .thenReturn(Mono.empty());
+        when(capabilityValidatorGateway.getTotalTechnologiesByCapabilities(5L, messageId)).thenReturn(Mono.just(10));
 
         // Act & Assert
         StepVerifier.create(createBootcampUseCase.createBootcamp(bootcampToCreate, messageId))
@@ -132,7 +137,6 @@ class CreateCapabilityUseCaseTest {
         // Arrange
         Bootcamp bootcampToCreate = new Bootcamp(null, "Java Bootcamp", "Intensive Java", LocalDate.of(2026,6,1), 16, null);
         Bootcamp savedBootcamp = new Bootcamp(5L, "Java Bootcamp", "Intensive Java", LocalDate.of(2026,6,1), 16, null);
-
         when(bootcampPersistencePort.existsByName("Java Bootcamp"))
                 .thenReturn(Mono.just(false));
         when(bootcampPersistencePort.save(any(Bootcamp.class)))
@@ -140,6 +144,8 @@ class CreateCapabilityUseCaseTest {
 
         when(capabilityValidatorGateway.saveCapabilityTechnologies(5L, Collections.emptyList(), messageId))
                 .thenReturn(Mono.empty());
+
+        when(capabilityValidatorGateway.getTotalTechnologiesByCapabilities(5L, messageId)).thenReturn(Mono.just(10));
 
         // Act & Assert
         StepVerifier.create(createBootcampUseCase.createBootcamp(bootcampToCreate, messageId))
@@ -151,5 +157,33 @@ class CreateCapabilityUseCaseTest {
         verify(bootcampPersistencePort).save(any(Bootcamp.class));
         verify(capabilityValidatorGateway).saveCapabilityTechnologies(5L, Collections.emptyList(), messageId);
         verify(bootcampPersistencePort, never()).deleteById(any());
+    }
+
+    @Test
+    void shouldCreateBootcampSuccessfullyWhenIdIsNull() {
+        // Arrange
+        Bootcamp bootcampToCreate = new Bootcamp(null, "Java Bootcamp", "Intensive Java", LocalDate.of(2026,6,1), 16, null);
+
+        Bootcamp savedBootcampWithNullId = new Bootcamp(null, "Java Bootcamp", "Intensive Java", LocalDate.of(2026,6,1), 16, null);
+
+        when(bootcampPersistencePort.existsByName("Java Bootcamp"))
+                .thenReturn(Mono.just(false));
+        when(bootcampPersistencePort.save(any(Bootcamp.class)))
+                .thenReturn(Mono.just(savedBootcampWithNullId));
+
+        when(capabilityValidatorGateway.saveCapabilityTechnologies(any(), any(), eq(messageId)))
+                .thenReturn(Mono.empty());
+
+        // Act & Assert
+        StepVerifier.create(createBootcampUseCase.createBootcamp(bootcampToCreate, messageId))
+                .expectNext(savedBootcampWithNullId)
+                .verifyComplete();
+
+        verify(bootcampPersistencePort).existsByName("Java Bootcamp");
+        verify(bootcampPersistencePort).save(any(Bootcamp.class));
+        verify(capabilityValidatorGateway).saveCapabilityTechnologies(isNull(), any(), eq(messageId));
+
+        verify(capabilityValidatorGateway, never()).getTotalTechnologiesByCapabilities(any(), any());
+        verify(reportGatewayPort, never()).notifyBootcampCreated(any());
     }
 }

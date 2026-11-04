@@ -4,7 +4,7 @@ import com.pragma.onclass_bootcamp_service.domain.api.DeleteBootcampServicePort;
 import com.pragma.onclass_bootcamp_service.domain.enums.TechnicalMessage;
 import com.pragma.onclass_bootcamp_service.domain.exceptions.BusinessException;
 import com.pragma.onclass_bootcamp_service.domain.spi.BootcampPersistencePort;
-import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGateway;
+import com.pragma.onclass_bootcamp_service.domain.spi.CapabilityGatewayPort;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 public class DeleteBootcampUseCase implements DeleteBootcampServicePort {
 
     private final BootcampPersistencePort bootcampPersistencePort;
-    private final CapabilityGateway capabilityGateway;
+    private final CapabilityGatewayPort capabilityGateway;
 
     @Override
     public Mono<Void> deleteBootcamp(Long bootcampId, String messageId) {
